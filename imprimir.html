@@ -19,10 +19,10 @@
   .ui .prev canvas{width:300px;height:150px;display:block}
   code{background:#f2f2f2;padding:1px 5px;border-radius:4px}
   @media print { .ui{display:none} }
-  /* Si el diálogo toma la hoja de 50×25 como vertical (25 mm de ancho × 50 de alto), la etiqueta se gira sola para llenarla; nada que ajustar. */
+  /* Opcional (casilla "Girar"): si el diálogo toma la hoja de 50×25 como vertical (25 mm de ancho × 50 de alto), la etiqueta se gira para llenarla. Apagado por omisión: en el Mac con Safari la vista previa sale desplazada pero imprime bien. */
   @media print and (max-width: 40mm) {
-    .label{width:25mm;height:50mm;overflow:hidden}
-    .label canvas{transform-origin:0 0;transform:rotate(90deg) translateY(-25mm)}
+    html.girar .label{width:25mm;height:50mm;overflow:hidden}
+    html.girar .label canvas{transform-origin:0 0;transform:rotate(90deg) translateY(-25mm)}
   }
   @media screen { .sheet{display:none} }
 </style>
@@ -33,7 +33,8 @@
   <p id="info"></p>
   <div class="prev" id="prev"></div>
   <p><button id="btn">Imprimir</button> <span id="msg" style="color:#666"></span></p>
-  <p style="font-size:12.5px">En el diálogo elige el preset <b>etiquetas · 50 por 25 mm</b> con escala 100 %. El sistema recuerda la última configuración, así que después solo es Imprimir → Imprimir. Si la vista previa muestra la hoja vertical, no pasa nada: la etiqueta se acomoda sola.</p>
+  <p style="font-size:12.5px">En el diálogo elige el preset <b>etiquetas · 50 por 25 mm</b> con escala 100 %. El sistema recuerda la última configuración, así que después solo es Imprimir → Imprimir. Si la vista previa muestra la hoja vertical pero imprime bien, déjalo así.</p>
+  <p style="font-size:12.5px"><label><input type="checkbox" id="girar"> Girar la etiqueta si la hoja sale vertical (solo si imprime desplazada; se recuerda en este equipo)</label></p>
 </div>
 <div class="sheet" id="sheet"></div>
 <script>
@@ -59,6 +60,8 @@
   const sheet=document.getElementById('sheet'); for(let i=0;i<copies;i++){ const d=document.createElement('div'); d.className='label'; d.appendChild(render(16)); sheet.appendChild(d); }
   const go=()=>{ document.getElementById('msg').textContent='Abriendo el diálogo de impresión…'; try{ window.print(); }catch(e){ document.getElementById('msg').textContent='Tu navegador no permitió imprimir desde aquí: usa ⌘P / Ctrl+P.'; } };
   document.getElementById('btn').addEventListener('click',go);
+  const gi=document.getElementById('girar'); try{ gi.checked=localStorage.getItem('etiq_girar')==='1'; }catch(e){} document.documentElement.classList.toggle('girar',gi.checked);
+  gi.addEventListener('change',()=>{ document.documentElement.classList.toggle('girar',gi.checked); try{ localStorage.setItem('etiq_girar',gi.checked?'1':'0'); }catch(e){} });
   window.addEventListener('afterprint',()=>{ document.getElementById('msg').textContent='Enviado. Puedes cerrar esta pestaña.'; });
   if(q.get('auto')!=='0') setTimeout(go,350);
 })();
