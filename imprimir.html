@@ -19,6 +19,11 @@
   .ui .prev canvas{width:300px;height:150px;display:block}
   code{background:#f2f2f2;padding:1px 5px;border-radius:4px}
   @media print { .ui{display:none} }
+  /* Si el diálogo toma la hoja de 50×25 como vertical (25 mm de ancho × 50 de alto), la etiqueta se gira sola para llenarla; nada que ajustar. */
+  @media print and (max-width: 40mm) {
+    .label{width:25mm;height:50mm;overflow:hidden}
+    .label canvas{transform-origin:0 0;transform:rotate(90deg) translateY(-25mm)}
+  }
   @media screen { .sheet{display:none} }
 </style>
 </head>
@@ -28,7 +33,7 @@
   <p id="info"></p>
   <div class="prev" id="prev"></div>
   <p><button id="btn">Imprimir</button> <span id="msg" style="color:#666"></span></p>
-  <p style="font-size:12.5px">En el diálogo elige el preset <b>etiquetas · 50 por 25 mm</b> con escala 100 %. El sistema recuerda la última configuración, así que después solo es Imprimir → Imprimir.</p>
+  <p style="font-size:12.5px">En el diálogo elige el preset <b>etiquetas · 50 por 25 mm</b> con escala 100 %. El sistema recuerda la última configuración, así que después solo es Imprimir → Imprimir. Si la vista previa muestra la hoja vertical, no pasa nada: la etiqueta se acomoda sola.</p>
 </div>
 <div class="sheet" id="sheet"></div>
 <script>
