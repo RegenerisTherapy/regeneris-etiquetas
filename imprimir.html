@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Imprimir etiqueta</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <style>
   @page { size: 50mm 25mm; margin: 0; }
   html,body{margin:0;padding:0;background:#fff;color:#111;font-family:-apple-system,"Segoe UI",system-ui,sans-serif}
@@ -39,17 +38,15 @@
   if(!code){ document.getElementById('info').textContent='Falta el código de la etiqueta. Abre esta página desde el botón Imprimir del inventario.'; document.getElementById('btn').disabled=true; return; }
   function qrCanvas(text,px){ const qr=qrcode(0,'M'); qr.addData(text); qr.make(); const n=qr.getModuleCount(); const c=document.createElement('canvas'); c.width=c.height=px; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,px,px); g.fillStyle='#000'; const cell=px/n; for(let r=0;r<n;r++)for(let col=0;col<n;col++) if(qr.isDark(r,col)) g.fillRect(Math.floor(col*cell),Math.floor(r*cell),Math.ceil(cell),Math.ceil(cell)); return c; }
   function wrap(g,text,maxW,maxLines){ const out=[]; let line=''; for(const w of String(text).split(/\s+/)){ const t=line?line+' '+w:w; if(g.measureText(t).width>maxW&&line){ out.push(line); line=w; if(out.length===maxLines) return out; } else line=t; } if(line&&out.length<maxLines) out.push(line); if(out.length===maxLines&&g.measureText(out[maxLines-1]).width>maxW){ let l=out[maxLines-1]; while(g.measureText(l+'…').width>maxW&&l.length) l=l.slice(0,-1); out[maxLines-1]=l+'…'; } return out; }
-  function render(scale){ // 50×25 mm; scale px/mm (8 = 203 dpi, 16 = nítido en pantalla)
+  function render(scale){ // 50×25 mm; scale px/mm (8 = 203 dpi). Solo QR grande + texto negro; sin Code128.
     const W=50*scale,H=25*scale,u=scale/8, c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
     g.fillStyle='#fff'; g.fillRect(0,0,W,H);
-    const qrSize=150*u; g.drawImage(qrCanvas(code,600),14*u,25*u,qrSize,qrSize);
-    g.fillStyle='#000'; g.textBaseline='top'; const x=176*u, maxW=W-x-10*u;
-    g.font='700 '+(20*u)+'px system-ui, sans-serif'; let y=14*u; for(const ln of wrap(g,title,maxW,2)){ g.fillText(ln,x,y); y+=23*u; }
-    g.font='500 '+(13*u)+'px system-ui, sans-serif'; g.fillStyle='#333'; for(const ln of wrap(g,sub,maxW,lines?2:3)){ g.fillText(ln,x,y); y+=16*u; }
-    if(lines){ g.font='500 '+(11*u)+'px system-ui, sans-serif'; for(const ln of wrap(g,lines,maxW,3)){ g.fillText(ln,x,y); y+=13*u; } }
-    try{ const probe=document.createElement('canvas'); JsBarcode(probe,code,{format:'CODE128',displayValue:false,margin:0,height:34,width:1}); const mod=Math.floor((maxW/u)/probe.width); if(mod>=1){ const bc=document.createElement('canvas'); JsBarcode(bc,code,{format:'CODE128',displayValue:false,margin:0,height:34,width:mod}); g.drawImage(bc,0,0,bc.width,bc.height,x,H-58*u,bc.width*u,34*u); } }catch(e){}
-    g.font='600 '+(13*u)+'px ui-monospace, Menlo, monospace'; g.fillStyle='#000'; g.fillText(code,x,H-20*u);
-    g.font='600 '+(9*u)+'px system-ui, sans-serif'; g.fillStyle='#666'; g.fillText('REGENERIS · '+kind,14*u,H-18*u);
+    const qrSize=176*u; g.drawImage(qrCanvas(code,704),10*u,12*u,qrSize,qrSize);
+    g.fillStyle='#000'; g.textBaseline='top'; const x=198*u, maxW=W-x-8*u; let y=10*u;
+    g.font='800 '+(22*u)+'px system-ui, -apple-system, "Segoe UI", sans-serif'; for(const ln of wrap(g,title,maxW,2)){ g.fillText(ln,x,y); y+=25*u; }
+    g.font='600 '+(15*u)+'px system-ui, -apple-system, "Segoe UI", sans-serif'; for(const ln of wrap(g,sub,maxW,2)){ g.fillText(ln,x,y); y+=18*u; }
+    if(lines){ g.font='600 '+(13*u)+'px system-ui, -apple-system, "Segoe UI", sans-serif'; for(const ln of wrap(g,lines,maxW,3)){ g.fillText(ln,x,y); y+=15*u; } }
+    g.font='800 '+(21*u)+'px ui-monospace, Menlo, Consolas, monospace'; g.fillText(code,x,H-32*u);
     return c;
   }
   document.getElementById('info').textContent=title+(sub?' · '+sub:'')+' · '+code+(copies>1?' · '+copies+' copias':'');
