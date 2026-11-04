@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Imprimir etiqueta</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<style>
+  @page { size: 50mm 25mm; margin: 0; }
+  html,body{margin:0;padding:0;background:#fff;color:#111;font-family:-apple-system,"Segoe UI",system-ui,sans-serif}
+  .label{width:50mm;height:25mm;display:block;page-break-after:always;break-after:page}
+  .label:last-child{page-break-after:auto;break-after:auto}
+  .label canvas{width:50mm;height:25mm;display:block}
+  .ui{padding:16px;font-size:14px;max-width:560px}
+  .ui h1{font-size:18px;margin:0 0 6px}
+  .ui p{margin:6px 0;color:#444;line-height:1.45}
+  .ui button{font:inherit;font-weight:700;padding:10px 18px;border-radius:10px;border:0;background:#ee6a1f;color:#fff;cursor:pointer}
+  .ui .prev{display:inline-block;border:1px solid #ddd;border-radius:6px;padding:4px;margin:10px 0;background:#fff}
+  .ui .prev canvas{width:300px;height:150px;display:block}
+  code{background:#f2f2f2;padding:1px 5px;border-radius:4px}
+  @media print { .ui{display:none} }
+  @media screen { .sheet{display:none} }
+</style>
+</head>
+<body>
+<div class="ui" id="ui">
+  <h1>Etiqueta 50 × 25 mm</h1>
+  <p id="info"></p>
+  <div class="prev" id="prev"></div>
+  <p><button id="btn">Imprimir</button> <span id="msg" style="color:#666"></span></p>
+  <p style="font-size:12.5px">En el diálogo elige el preset <b>etiquetas · 50 por 25 mm</b> con escala 100 %. El sistema recuerda la última configuración, así que después solo es Imprimir → Imprimir.</p>
+</div>
+<div class="sheet" id="sheet"></div>
+<script>
+(function(){
+  const q=new URLSearchParams(location.search);
+  const code=(q.get('c')||'').trim(), title=q.get('t')||'', sub=q.get('s')||'', lines=q.get('l')||'', kind=q.get('k')||'', copies=Math.max(1,Math.min(50,+q.get('n')||1));
+  if(!code){ document.getElementById('info').textContent='Falta el código de la etiqueta. Abre esta página desde el botón Imprimir del inventario.'; document.getElementById('btn').disabled=true; return; }
+  function qrCanvas(text,px){ const qr=qrcode(0,'M'); qr.addData(text); qr.make(); const n=qr.getModuleCount(); const c=document.createElement('canvas'); c.width=c.height=px; const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,px,px); g.fillStyle='#000'; const cell=px/n; for(let r=0;r<n;r++)for(let col=0;col<n;col++) if(qr.isDark(r,col)) g.fillRect(Math.floor(col*cell),Math.floor(r*cell),Math.ceil(cell),Math.ceil(cell)); return c; }
+  function wrap(g,text,maxW,maxLines){ const out=[]; let line=''; for(const w of String(text).split(/\s+/)){ const t=line?line+' '+w:w; if(g.measureText(t).width>maxW&&line){ out.push(line); line=w; if(out.length===maxLines) return out; } else line=t; } if(line&&out.length<maxLines) out.push(line); if(out.length===maxLines&&g.measureText(out[maxLines-1]).width>maxW){ let l=out[maxLines-1]; while(g.measureText(l+'…').width>maxW&&l.length) l=l.slice(0,-1); out[maxLines-1]=l+'…'; } return out; }
+  function render(scale){ // 50×25 mm; scale px/mm (8 = 203 dpi, 16 = nítido en pantalla)
+    const W=50*scale,H=25*scale,u=scale/8, c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+    g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+    const qrSize=150*u; g.drawImage(qrCanvas(code,600),14*u,25*u,qrSize,qrSize);
+    g.fillStyle='#000'; g.textBaseline='top'; const x=176*u, maxW=W-x-10*u;
+    g.font='700 '+(20*u)+'px system-ui, sans-serif'; let y=14*u; for(const ln of wrap(g,title,maxW,2)){ g.fillText(ln,x,y); y+=23*u; }
+    g.font='500 '+(13*u)+'px system-ui, sans-serif'; g.fillStyle='#333'; for(const ln of wrap(g,sub,maxW,lines?2:3)){ g.fillText(ln,x,y); y+=16*u; }
+    if(lines){ g.font='500 '+(11*u)+'px system-ui, sans-serif'; for(const ln of wrap(g,lines,maxW,3)){ g.fillText(ln,x,y); y+=13*u; } }
+    try{ const probe=document.createElement('canvas'); JsBarcode(probe,code,{format:'CODE128',displayValue:false,margin:0,height:34,width:1}); const mod=Math.floor((maxW/u)/probe.width); if(mod>=1){ const bc=document.createElement('canvas'); JsBarcode(bc,code,{format:'CODE128',displayValue:false,margin:0,height:34,width:mod}); g.drawImage(bc,0,0,bc.width,bc.height,x,H-58*u,bc.width*u,34*u); } }catch(e){}
+    g.font='600 '+(13*u)+'px ui-monospace, Menlo, monospace'; g.fillStyle='#000'; g.fillText(code,x,H-20*u);
+    g.font='600 '+(9*u)+'px system-ui, sans-serif'; g.fillStyle='#666'; g.fillText('REGENERIS · '+kind,14*u,H-18*u);
+    return c;
+  }
+  document.getElementById('info').textContent=title+(sub?' · '+sub:'')+' · '+code+(copies>1?' · '+copies+' copias':'');
+  document.getElementById('prev').appendChild(render(16));
+  const sheet=document.getElementById('sheet'); for(let i=0;i<copies;i++){ const d=document.createElement('div'); d.className='label'; d.appendChild(render(16)); sheet.appendChild(d); }
+  const go=()=>{ document.getElementById('msg').textContent='Abriendo el diálogo de impresión…'; try{ window.print(); }catch(e){ document.getElementById('msg').textContent='Tu navegador no permitió imprimir desde aquí: usa ⌘P / Ctrl+P.'; } };
+  document.getElementById('btn').addEventListener('click',go);
+  window.addEventListener('afterprint',()=>{ document.getElementById('msg').textContent='Enviado. Puedes cerrar esta pestaña.'; });
+  if(q.get('auto')!=='0') setTimeout(go,350);
+})();
+</script>
+</body>
+</html>
